@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rafli Store</title>
+  <style>
+    * {margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif;}
+    body {
+      background: linear-gradient(to bottom right, #0f0f23, #232340);
+      color: white; padding: 20px; overflow-x: hidden;
+    }
+
+    /* Loading */
+    #loading-screen {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: black; color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; z-index: 9999;
+      animation: fadeOut 3s forwards 2.5s;
+    }
+    @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+    @keyframes rotate { from {transform: rotate(0deg);} to {transform: rotate(360deg);} }
+
+    /* Musik */
+    .music-box {
+      position: fixed; top: 15px; left: 15px;
+      background: rgba(0,0,0,0.6); padding: 8px 12px;
+      border-radius: 30px; display: flex; align-items: center; gap: 10px;
+      z-index: 10000; box-shadow: 0 0 10px #000;
+    }
+    .spotify-logo {
+      width: 28px; height: 28px; animation: rotate 6s linear infinite;
+      border-radius: 50%;
+    }
+    .song-title {
+      font-size: 14px; font-weight: bold; color: #1DB954;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;
+    }
+    #tapToPlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      background: transparent;
+    }
+
+    h1 { text-align: center; margin-bottom: 10px; animation: fadeIn 1s ease; }
+
+    /* Story */
+    .history-section {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+    }
+    .story {
+      display: flex; flex-direction: column; align-items: center;
+      cursor: pointer; transition: transform 0.3s;
+    }
+    .story:hover { transform: scale(1.1); }
+    .story img {
+      width: 70px; height: 70px; border-radius: 50%;
+      border: 3px solid #1DB954; object-fit: cover;
+      box-shadow: 0 0 10px #000;
+    }
+    .story span {
+      margin-top: 5px; font-size: 13px; color: #fff;
+    }
+
+    /* Modal Story */
+    .modal-story {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.95);
+      z-index: 99999;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      padding: 20px;
+    }
+    .modal-story img {
+      max-width: 90%;
+      max-height: 70vh;
+      border-radius: 12px;
+      box-shadow: 0 0 30px #000;
+      animation: fadeIn 0.4s ease;
+    }
+    .story-title {
+      color: white;
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    /* Banner */
+    .gif-banner {
+      width: 100%; max-height: 250px; object-fit: cover;
+      border-radius: 16px; margin: 15px 0 25px 0;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    .menu-container {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;
+    }
+    .menu-item {
+      background: #2d2d3a; padding: 15px; text-align: center;
+      border-radius: 12px; transition: 0.3s; cursor: pointer;
+      box-shadow: 0 0 8px #00000080;
+    }
+    .menu-item:hover { background: #444; transform: scale(1.05); }
+
+    /* Form & Payment */
+    .form-input { margin: 20px 0; display: flex; flex-direction: column; gap: 10px; }
+    input[type="text"], input[type="file"] {
+      padding: 10px; border: none; border-radius: 6px;
+      background: #1c1c2c; color: white;
+    }
+
+    .payment-section {
+      margin-top: 20px; background: #222;
+      padding: 20px; border-radius: 12px;
+    }
+    .btn-copy, .btn-beli, .btn-back {
+      background: #03a9f4; color: white;
+      padding: 10px 15px; border: none; border-radius: 6px;
+      cursor: pointer; transition: 0.3s;
+    }
+    .btn-copy:hover, .btn-beli:hover, .btn-back:hover {
+      background: #0288d1; transform: scale(1.05);
+    }
+
+    .qr-img {
+      width: 140px; border-radius: 8px;
+      display: block; margin: 15px auto;
+      box-shadow: 0 0 10px #555; cursor: pointer;
+    }
+    .qr-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.8); display: none;
+      align-items: center; justify-content: center; z-index: 999;
+    }
+    .qr-overlay img {
+      width: 80vw; max-width: 500px;
+      border-radius: 12px; box-shadow: 0 0 20px white;
+    }
+
+    #totalHarga { margin-top: 10px; font-weight: bold; font-size: 16px; color: #0f0; }
+
+    #notif {
+      position: fixed; top: 20px; right: 20px;
+      background: #03a9f4; color: white;
+      padding: 10px 15px; border-radius: 8px;
+      box-shadow: 0 0 10px #000; opacity: 0;
+      transition: all 0.5s ease; z-index: 9999;
+    }
+
+    .button-group {
+      display: flex; justify-content: center; gap: 15px; margin-top: 20px; flex-wrap: wrap;
+    }
+
+    footer {
+      margin-top: 50px; text-align: center; font-size: 14px; opacity: 0.8;
+    }
+    .social-icons img { width: 28px; margin: 5px; vertical-align: middle; }
+  </style>
+</head>
+<body>
+  
+<!-- Loading Screen -->
+  <div id="loading-screen">⏳ Memuat Rafli Store...</div>
+  <div id="notif"></div>
+
+  <!-- Musik -->
+  <div class="music-box">
+    <img src="https://cdn-icons-png.flaticon.com/512/174/174872.png" class="spotify-logo" alt="Spotify">
+    <span class="song-title">Sailor Song - Gigi Perez</span>
+    <audio id="music" src="https://files.catbox.moe/hprkl5.mp3" autoplay loop muted></audio>
+  </div>
+  <div id="tapToPlay"></div>
+
+  <h1>Welcome To Rafli Store</h1>
+
+  <!-- Story -->
+  <div class="history-section">
+    <div class="story" onclick="lihatStory('YouTube')">
+      <img src="https://files.catbox.moe/rgz9w7.jpg" alt="YouTube"><span>YouTube</span>
+    </div>
+    <div class="story" onclick="lihatStory('Whatsapp')">
+      <img src="https://files.catbox.moe/fk70nj.jpg" alt="Whatsapp"><span>Whatsapp</span>
+    </div>
+    <div class="story" onclick="lihatStory('Instagram')">
+      <img src="https://files.catbox.moe/6eb01f.jpg" alt="Instagram"><span>Instagram</span>
+    </div>
+    <div class="story" onclick="lihatStory('Tiktok')">
+      <img src="https://files.catbox.moe/96bn83.jpg" alt="Tiktok"><span>Tiktok</span>
+    </div>
+  </div>
+
+  <!-- Story Modal -->
+  <div id="storyModal" class="modal-story">
+    <img id="storyImg" src="" alt="Story">
+    <div class="story-title" id="storyTitle"></div>
+  </div>
+
+  <!-- Banner -->
+  <img class="gif-banner" src="https://files.catbox.moe/12kmnd.gif" alt="GIF Banner">
+
+  <!-- Menu Panel -->
+  <div class="menu-container" id="menuPanel">
+    <div class="menu-item" onclick="pilih('Panel 1 GB', 1000)">Panel 1 GB</div>
+    <div class="menu-item" onclick="pilih('Panel 2 GB', 2000)">Panel 2 GB</div>
+    <div class="menu-item" onclick="pilih('Panel 3 GB', 3000)">Panel 3 GB</div>
+    <div class="menu-item" onclick="pilih('Panel 4 GB', 4000)">Panel 4 GB</div>
+    <div class="menu-item" onclick="pilih('Panel 5 GB', 5000)">Panel 5 GB</div>
+    <div class="menu-item" onclick="pilih('Panel 6 GB', 6000)">Panel 6 GB</div>
+    <div class="menu-item" onclick="pilih('Panel 7 GB', 7000)">Panel 7 GB</div>
+    <div class="menu-item" onclick="pilih('Panel 8 GB', 8000)">Panel 8 GB</div>
+    <div class="menu-item" onclick="pilih('Panel 9 GB', 9000)">Panel 9 GB</div>
+    <div class="menu-item" onclick="pilih('Panel 10 GB', 10000)">Panel 10 GB</div>
+    <div class="menu-item" onclick="pilih('Unlimited CPU & RAM', 4000)">Unlimited CPU & RAM</div>
+    <div class="menu-item" onclick="pilih('Sc Mikasa Free Up', 25000)">Sc Mikasa Free Up</div>
+    <div class="menu-item" onclick="pilih('Sc Mikasa No Up',15000)">Sc Mikasa No Up</div>
+  </div>
+
+  <!-- Form Pembayaran -->
+  <div class="form-input">
+    <label>Nama:</label>
+    <input type="text" id="nama" placeholder="Contoh: Rafli Store">
+    <label>Nomor Tujuan [Wajib Benar]:</label>
+    <input type="text" id="nomor" placeholder="Contoh: 62xxxxxxx">
+    <label>Bukti Transfer (JPG/PNG):</label>
+    <input type="file" id="bukti" accept="image/*">
+  </div>
+
+  <p id="totalHarga">Total: Rp 0</p>
+
+  <div class="payment-section">
+    <h2>Pilih Metode Pembayaran:</h2>
+    <div class="button-group">
+      <button class="btn-copy" onclick="tampilDana()">💳 Nomor DANA</button>
+      <button class="btn-copy" onclick="tampilQRIS()">📷 QRIS</button>
+    </div>
+    <div id="danaSection" style="display:none; margin-top:15px;">
+      <p>Nomor DANA:</p>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <input id="danaNumber" value="08816411039" readonly style="padding: 8px; width: 180px; border-radius: 6px; border: none;">
+        <button class="btn-copy" onclick="copyDana()">📋 Salin</button>
+      </div>
+    </div>
+    <div id="qrisSection" style="display:none; margin-top:15px;">
+      <p>Scan QRIS:</p>
+      <img class="qr-img" src="https://files.catbox.moe/uzl5ha.jpg" alt="QRIS" onclick="showQR()">
+    </div>
+    <div class="button-group">
+      <button class="btn-beli" onclick="kirimTelegram()">🛒 Beli Sekarang</button>
+      <button class="btn-back" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })">🔙 Kembali ke Atas</button>
+    </div>
+  </div>
+
+  <div class="qr-overlay" id="qrOverlay" onclick="hideQR()">
+    <img src="https://files.catbox.moe/uzl5ha.jpg" alt="QRIS Zoom">
+  </div>
+
+  <footer>
+    <h3>👤 Pengembang: Rafli Store</h3>
+    <img src="https://files.catbox.moe/mxf23t.jpg" alt="Foto" style="width:100px; border-radius: 50%; margin-top: 10px;">
+    <p>© 2025 Rafli Store. All rights reserved.</p>
+    <div class="social-icons">
+      <a href="https://www.youtube.com/@RapzStore-q9e"><img src="https://cdn-icons-png.flaticon.com/512/1384/1384060.png"></a>
+      <a href="https://www.tiktok.com/@rafijoki2?_t=ZS-8y8GeB99H3X&_r=1"><img src="https://cdn-icons-png.flaticon.com/512/3046/3046121.png"></a>
+      <a href="https://www.instagram.com/rafi_store_real1?igsh=MXNoajE5YmVuM2t6bQ=="><img src="https://cdn-icons-png.flaticon.com/512/1384/1384063.png"></a>
+      <a href="https://wa.me/6282313458172"><img src="https://cdn-icons-png.flaticon.com/512/1384/1384023.png"></a>
+    </div>
+  </footer>
+
+  <script>
+    const stories = [
+      { title: "YouTube", img: "https://files.catbox.moe/rgz9w7.jpg" },
+      { title: "Whatsapp", img: "https://files.catbox.moe/fk70nj.jpg" },
+      { title: "Instagram", img: "https://files.catbox.moe/6eb01f.jpg" },
+      { title: "Tiktok", img: "https://files.catbox.moe/96bn83.jpg" }
+    ];
+    let currentStory = 0, timer = null, startX = 0, startY = 0;
+
+    function lihatStory(title) {
+      currentStory = stories.findIndex(s => s.title === title);
+      if (currentStory !== -1) openStory(currentStory);
+    }
+
+    function openStory(index) {
+      const modal = document.getElementById("storyModal");
+      document.getElementById("storyImg").src = stories[index].img;
+      document.getElementById("storyTitle").textContent = stories[index].title;
+      modal.style.display = "flex";
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        currentStory = (currentStory + 1) % stories.length;
+        openStory(currentStory);
+      }, 7000);
+    }
+
+    function closeStory() {
+      clearTimeout(timer);
+      document.getElementById("storyModal").style.display = "none";
+    }
+
+    const modal = document.getElementById("storyModal");
+    modal.addEventListener("touchstart", e => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    });
+    modal.addEventListener("touchend", e => {
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const diffX = endX - startX;
+      const diffY = endY - startY;
+
+      if (Math.abs(diffY) > Math.abs(diffX)) {
+        if (diffY > 50) closeStory();
+      } else {
+        if (diffX < -50) {
+          currentStory = (currentStory + 1) % stories.length;
+          openStory(currentStory);
+        } else if (diffX > 50) {
+          currentStory = (currentStory - 1 + stories.length) % stories.length;
+          openStory(currentStory);
+        }
+      }
+    });
+
+    let produkDipilih = "", hargaDipilih = 0, metodeDipilih = "";
+    function pilih(namaProduk, harga) {
+      produkDipilih = namaProduk;
+      hargaDipilih = harga;
+      document.getElementById("totalHarga").textContent = `Total: Rp ${harga.toLocaleString()}`;
+      showNotif(`📦 Produk dipilih: ${namaProduk}`);
+    }
+
+    function copyDana() {
+      const dana = document.getElementById("danaNumber");
+      navigator.clipboard.writeText(dana.value);
+      showNotif("✅ Nomor DANA disalin!");
+    }
+
+    function tampilDana() {
+      metodeDipilih = "DANA";
+      document.getElementById("danaSection").style.display = "block";
+      document.getElementById("qrisSection").style.display = "none";
+      showNotif("💳 Metode DANA dipilih");
+    }
+
+    function tampilQRIS() {
+      metodeDipilih = "QRIS";
+      document.getElementById("danaSection").style.display = "none";
+      document.getElementById("qrisSection").style.display = "block";
+      showNotif("📷 Metode QRIS dipilih");
+    }
+
+    function showQR() {
+      document.getElementById("qrOverlay").style.display = "flex";
+    }
+
+    function hideQR() {
+      document.getElementById("qrOverlay").style.display = "none";
+    }
+
+    function showNotif(text) {
+      const notif = document.getElementById("notif");
+      notif.textContent = text;
+      notif.style.opacity = 1;
+      setTimeout(() => notif.style.opacity = 0, 3000);
+    }
+
+    async function kirimTelegram() {
+      const nama = document.getElementById("nama").value.trim();
+      const nomor = document.getElementById("nomor").value.trim();
+      const bukti = document.getElementById("bukti").files[0];
+      if (!nama || !nomor || !produkDipilih || !metodeDipilih) return showNotif("⚠️ Lengkapi data dan pilih metode pembayaran!");
+      if (!bukti) return showNotif("⚠️ Upload bukti transfer dulu!");
+
+      const token = "8004759760:AAGZ_gWjxGonBmgW5P4FhabPasTsb-WGzJ0";
+      const chatId = "7872909675";
+      const caption = `🛒 *ORDER BARU*\n\n👤 Nama: ${nama}\n📱 Nomor Tujuan: ${nomor}\n📦 Produk: ${produkDipilih}\n💰 Harga: Rp ${hargaDipilih.toLocaleString()}\n📍 Metode: ${metodeDipilih}\n📌 Status: Sudah Upload Bukti`;
+
+      const formData = new FormData();
+      formData.append("chat_id", chatId);
+      formData.append("caption", caption);
+      formData.append("parse_mode", "Markdown");
+      formData.append("photo", bukti);
+
+      fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+        method: "POST",
+        body: formData
+      })
+      .then(() => showNotif("✅ Pesanan Berhasil, Admin Segera Memproses!"))
+      .catch(() => showNotif("❌ Gagal mengirim ke Telegram!"));
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const audio = document.getElementById("music");
+      const tapDiv = document.getElementById("tapToPlay");
+      audio.muted = false;
+      audio.volume = 0.8;
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          showNotif("🎵 Musik diputar otomatis");
+          tapDiv.remove();
+        }).catch(() => {
+          showNotif("🎵 Tap layar");
+          tapDiv.addEventListener("click", () => {
+            audio.play();
+            tapDiv.remove();
+            showNotif("✅ Aktif");
+          }, { once: true });
+        });
+      }
+    });
+  </script>
+</body>
+</html>
